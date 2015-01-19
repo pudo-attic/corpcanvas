@@ -8,18 +8,18 @@ svg {
 }
 
 circle {
-    fill: pink;
-    stroke: #fff;
+    fill: #fff;
+    stroke: #ddd;
     cursor: pointer;
     stroke-width: 2px;
 }
 
-circle:hover {
-    fill: red;
+.node:hover circle {
+    fill: #ddd;
 }
 
 circle.dragging {
-    stroke: #ddd;
+    stroke: #fff;
 }
 
 .axis line {
@@ -29,9 +29,10 @@ circle.dragging {
     vector-effect: non-scaling-stroke;
 }
 
-text {
+.node text {
     fill: #666;
     font-weight: bold;
+    cursor: pointer;
 }
 
 .link line {

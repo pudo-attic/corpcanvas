@@ -2,8 +2,15 @@
 var corpcanvas = angular.module('corpcanvas', ['debounce']);
 
 var FIXTURES = {
-  'nodes': [{'id': 1, 'label': 'Chris Taggart'}, {'id': 2, 'label': 'Chrinon Ltd.'}],
+  'nodes': [
+    {'id': 1, 'label': 'Chris Taggart', 'type': 'person'},
+    {'id': 2, 'label': 'Chrinon Ltd.', 'type': 'company'}],
   'links': [{'parent': 1, 'child': 2}]
+}
+
+var ICONS = {
+  'person': '\uf183',
+  'company': '\uf0f2'
 }
 
 
@@ -115,6 +122,13 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       .attr("dy", function(d) { return grid.getFactor() + 10; })
       .attr("text-anchor", "middle")
       .text(function(d){ return d.label; });
+
+    node.append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
+      .attr('font-family', 'FontAwesome')
+      .attr('font-size', function(d) { return grid.getFactor() * 0.9; })
+      .text(function(d) { return ICONS[d.type]; });
   };
 
   var renderLinks = function() {
@@ -249,7 +263,7 @@ corpcanvas.factory('grid', ['graph', function(graph) {
     reset: function(width, height) {
       windowWidth = width;
       windowHeight = height;
-      factor = Math.min(1000, Math.max(20, width / 50));
+      factor = Math.min(1000, Math.max(20, width / 100));
       padding = factor * 0.5;
       outerBorder = factor + padding;
       nodeWidth = ((factor * 2) + padding)
@@ -312,10 +326,3 @@ corpcanvas.factory('graph', ['$rootScope', function($rootScope) {
     }
   };
 }]);
-
-
-
-corpcanvas.factory('d3', ['$rootScope', function($rootScope) {
-  return {};
-}]);
-
