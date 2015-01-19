@@ -1,5 +1,5 @@
 
-var corpcanvas = angular.module('corpcanvas', []);
+var corpcanvas = angular.module('corpcanvas', ['debounce']);
 
 var FIXTURES = {
   'nodes': [{'id': 1, 'label': 'Chris Taggart'}, {'id': 2, 'label': 'Chrinon Ltd.'}],
@@ -7,8 +7,8 @@ var FIXTURES = {
 }
 
 
-corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'graph', 'grid',
-  function($scope, $location, $http, $window, graph, grid) {
+corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'graph', 'grid', 'debounce',
+  function($scope, $location, $http, $window, graph, grid, debounce) {
   
   var svg = d3.select("#page").append("svg"),
       gridSize = 128;
@@ -46,6 +46,16 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
   var dragEnded = function(d) {
     d3.select(this)
       .classed("dragging", false);
+    var pos = grid.snap(d.id, d.x, d.y);
+    d.left = pos[0];
+    d.top = pos[1];
+    d3.select(this)
+      .attr("cx", function(d) {
+        return grid.translateTop(d.top);
+      })
+      .attr("cy", function(d) {
+        return grid.translateLeft(d.left);
+      });
   }
 
   var loadFixtures = function() {
@@ -70,8 +80,8 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
         .data(graph.nodes())
       .enter().append("circle")
         .attr("r", function(d) { return grid.getFactor(); })
-        .attr("cx", function(d) { d.x = d.id * 100; return d.x; })
-        .attr("cy", function(d) { d.y = d.id * 100; return d.y; })
+        .attr("cx", function(d) { d.x = grid.translateTop(d.top); return d.x; })
+        .attr("cy", function(d) { d.y = grid.translateLeft(d.left); return d.y; })
         .call(drag)
         .style("fill", function(d, i) { return '#8000aa'; });
 
@@ -79,7 +89,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
 
   var init = function() {
     loadFixtures();
-    $(window).resize(updateSize);
+    $(window).resize(debounce(updateSize, 400));
     updateSize();
   };
 
@@ -87,13 +97,19 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
 }]);
 
 
-corpcanvas.factory('grid', ['$rootScope', function($rootScope) {
-  var grid = [],
-      windowWidth = 0,
+corpcanvas.factory('grid', ['graph', function(graph) {
+  var windowWidth = 0,
       windowHeight = 0,
-      numHorizontal = 0,
-      numVertical = 0,
-      factor = 10;
+      //numHorizontal = 0,
+      //numVertical = 0,
+      factor = 10,
+      padding = 0;
+
+  var place = function(id, left, top) {
+    //console.log("PLACE", id, left, top);
+    //grid.push([id, left, top]);
+    return [left, top];
+  }
 
   return {
     reset: function(width, height) {
@@ -101,6 +117,12 @@ corpcanvas.factory('grid', ['$rootScope', function($rootScope) {
       windowHeight = height;
       factor = Math.min(1000, Math.max(20, width / 50));
       padding = factor * 0.3;
+    },
+    place: place,
+    snap: function(id, x, y) {
+      var left = Math.round((y - (factor + padding)) / ((factor * 2) + padding));
+      var top = Math.round((x - (factor + padding)) / ((factor * 2) + padding));
+      return place(id, left, top);
     },
     getFactor: function() {
       return factor;
@@ -116,6 +138,12 @@ corpcanvas.factory('grid', ['$rootScope', function($rootScope) {
     },
     maxY: function() {
       return windowHeight - (factor + padding);
+    },
+    translateTop: function(top) {
+      return factor + padding + (((factor * 2) + padding) * top);
+    },
+    translateLeft: function(left) {
+      return factor + padding + (((factor * 2) + padding) * left);
     }
   };
 }]);
@@ -128,6 +156,8 @@ corpcanvas.factory('graph', ['$rootScope', function($rootScope) {
 
   return {
     addNode: function(data) {
+      data.top = 0;
+      data.left = 0;
       nodes[data.id] = data;
     },
     addLink: function(data) {
