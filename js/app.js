@@ -188,12 +188,8 @@ corpcanvas.factory('grid', ['graph', function(graph) {
 
   var isFree = function(id, left, top) {
     var free = true;
-    if (angular.isUndefined(top) || top === null ||
-        angular.isUndefined(left) || left === null) {
-      return false;
-    }
-    if (left < 0 || top < 0 || left >= (numVertical - 1)
-        || top >= (numHorizontal - 1)) {
+    if (left < 0 || top < 0 || left >= (numVertical)
+        || top >= (numHorizontal)) {
       return false;
     }
     angular.forEach(graph.nodes(), function(n) {
@@ -204,10 +200,47 @@ corpcanvas.factory('grid', ['graph', function(graph) {
     return free;
   }
 
+  var findNearest = function(n) {
+    var i = 1;
+    while (true) {
+      if (isFree(n.id, n.left, n.top + i)) {
+        return [n.left, n.top + i];
+      }
+      if (isFree(n.id, n.left + i, n.top)) {
+        return [n.left + i, n.top];
+      }
+      if (isFree(n.id, n.left + i, n.top - i)) {
+        return [n.left, n.top - i];
+      }
+      if (isFree(n.id, n.left - i, n.top)) {
+        return [n.left - i, n.top];
+      }
+      if (isFree(n.id, n.left + i, n.top + i)) {
+        return [n.left + i, n.top + i];
+      }
+      if (isFree(n.id, n.left - i, n.top + i)) {
+        return [n.left - i, n.top + i];
+      }
+      if (isFree(n.id, n.left + i, n.top - i)) {
+        return [n.left + i, n.top - i];
+      }
+      if (isFree(n.id, n.left - i, n.top - i)) {
+        return [n.left - i, n.top - i];
+      }
+      i++;
+    }
+  }
+
   var place = function(n) {
-    if (!isFree(n.id, n.left, n.top)) {
+    if (angular.isUndefined(n.top) || n.top === null ||
+        angular.isUndefined(n.left) || n.left === null) {
       n.top = Math.floor(Math.random() * numVertical);
       n.left = Math.floor(Math.random() * numHorizontal);
+    }
+    if (!isFree(n.id, n.left, n.top)) {
+      var nearest = findNearest(n);
+      n.top = nearest[1];
+      n.left = nearest[0];
       return place(n);
     }
   }
