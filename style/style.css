@@ -1,6 +1,6 @@
 
 body {
-    background-color: pink;
+    background-color: #f0f0f0;
 }
 
 svg {
@@ -8,12 +8,24 @@ svg {
 }
 
 circle {
-    fill: #fff;
-    stroke: #000;
+    fill: pink;
+    stroke: #fff;
     cursor: pointer;
     stroke-width: 2px;
 }
 
 circle.dragging {
     stroke: #ddd;
+}
+
+.axis line {
+    fill: none;
+    stroke: #ddd;
+    shape-rendering: crispEdges;
+    vector-effect: non-scaling-stroke;
+}
+
+text {
+    fill: #000;
+    font-weight: bold;
 }

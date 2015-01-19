@@ -11,6 +11,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
   function($scope, $location, $http, $window, graph, grid, debounce) {
   
   var svg = d3.select("#page").append("svg"),
+      container = svg.append("g"),
       gridSize = 128;
 
   var updateSize = function() {
@@ -19,7 +20,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
     svg.attr("width", width)
        .attr("height", height);
     grid.reset(width, height);
-    redraw();
+    redraw(width, height);
   };
 
   var dragStarted = function(d) {
@@ -29,17 +30,10 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
 
   var dragged = function(d) {
     d3.select(this)
-      .attr("cx", function(d) {
-        d.x = d.x + d3.event.dx;
-        d.x = Math.max(grid.minX(), d.x);
-        d.x = Math.min(grid.maxX(), d.x);
-        return d.x;
-      })
-      .attr("cy", function(d) {
-        d.y = d.y + d3.event.dy;
-        d.y = Math.max(grid.minY(), d.y);
-        d.y = Math.min(grid.maxY(), d.y);
-        return d.y;
+      .attr("transform", function(d){
+          d.x = Math.min(grid.maxX(), Math.max(grid.minX(), d.x + d3.event.dx));
+          d.y = Math.min(grid.maxY(), Math.max(grid.minY(), d.y + d3.event.dy));
+          return "translate(" + d.x + "," + d.y + ")";
       });
   };
 
@@ -50,11 +44,10 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
     d.left = pos[0];
     d.top = pos[1];
     d3.select(this)
-      .attr("cx", function(d) {
-        return grid.translateTop(d.top);
-      })
-      .attr("cy", function(d) {
-        return grid.translateLeft(d.left);
+      .attr("transform", function(d){
+          d.x = grid.translateTop(d.top);
+          d.y = grid.translateLeft(d.left);
+          return "translate(" + d.x + "," + d.y + ")";
       });
   }
 
@@ -67,7 +60,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
     });
   };
 
-  var redraw = function() {
+  var redraw = function(width, height) {
     graph.dump();
 
     var drag = d3.behavior.drag()
@@ -76,14 +69,48 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       .on("drag", dragged)
       .on("dragend", dragEnded);
 
-    svg.selectAll("circle")
+    //container.selectAll("line").remove();
+    container.selectAll("g").remove();
+
+    container.append("g")
+        .attr("class", "x axis")
+      .selectAll("line")
+        .data(d3.range(0, width, grid.getPadding()))
+      .enter().append("line")
+        .attr("x1", function(d) { return d; })
+        .attr("y1", 0)
+        .attr("x2", function(d) { return d; })
+        .attr("y2", height);
+
+    container.append("g")
+        .attr("class", "y axis")
+      .selectAll("line")
+        .data(d3.range(0, height, grid.getPadding()))
+      .enter().append("line")
+        .attr("x1", 0)
+        .attr("y1", function(d) { return d; })
+        .attr("x2", width)
+        .attr("y2", function(d) { return d; });
+
+    var node = container.selectAll(".node")
         .data(graph.nodes())
-      .enter().append("circle")
-        .attr("r", function(d) { return grid.getFactor(); })
-        .attr("cx", function(d) { d.x = grid.translateTop(d.top); return d.x; })
-        .attr("cy", function(d) { d.y = grid.translateLeft(d.left); return d.y; })
-        .call(drag)
-        .style("fill", function(d, i) { return '#8000aa'; });
+      .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", function(d){
+          d.x = grid.translateTop(d.top);
+          d.y = grid.translateLeft(d.left);
+          return "translate(" + d.x + "," + d.y + ")";
+        })
+        .call(drag);
+
+    node.append("circle")
+      .attr("r", function(d) { return grid.getFactor(); });
+    node.append("text")
+      .attr("dy", function(d) { return grid.getFactor() + 14; })
+      .attr("text-anchor", "middle")
+      .text(function(d){
+        return d.label;
+      });
 
   };
 
@@ -116,7 +143,7 @@ corpcanvas.factory('grid', ['graph', function(graph) {
       windowWidth = width;
       windowHeight = height;
       factor = Math.min(1000, Math.max(20, width / 50));
-      padding = factor * 0.3;
+      padding = factor * 0.5;
     },
     place: place,
     snap: function(id, x, y) {
@@ -124,9 +151,8 @@ corpcanvas.factory('grid', ['graph', function(graph) {
       var top = Math.round((x - (factor + padding)) / ((factor * 2) + padding));
       return place(id, left, top);
     },
-    getFactor: function() {
-      return factor;
-    },
+    getFactor: function() { return factor; },
+    getPadding: function() { return padding; },
     minX: function() {
       return factor + padding;
     },
