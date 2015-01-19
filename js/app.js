@@ -12,6 +12,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
   
   var svg = d3.select("#page").append("svg"),
       container = svg.append("g"),
+      linkElements = null,
       gridSize = 128;
 
   var updateSize = function() {
@@ -35,6 +36,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
           d.y = Math.min(grid.maxY(), Math.max(grid.minY(), d.y + d3.event.dy));
           return "translate(" + d.x + "," + d.y + ")";
       });
+    alignLinks();
   };
 
   var dragEnded = function(d) {
@@ -49,6 +51,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
           d.y = grid.translateLeft(d.left);
           return "translate(" + d.x + "," + d.y + ")";
       });
+    alignLinks();
   }
 
   var loadFixtures = function() {
@@ -62,15 +65,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
 
   var redraw = function(width, height) {
     graph.dump();
-
-    var drag = d3.behavior.drag()
-      .origin(function(d) { return d; })
-      .on("dragstart", dragStarted)
-      .on("drag", dragged)
-      .on("dragend", dragEnded);
-
-    //container.selectAll("line").remove();
-    container.selectAll("g").remove();
+    container.selectAll(".axis").remove();
 
     container.append("g")
         .attr("class", "x axis")
@@ -92,6 +87,20 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
         .attr("x2", width)
         .attr("y2", function(d) { return d; });
 
+
+    renderLinks();
+    renderNodes();
+  };
+
+  var renderNodes = function() {
+    var drag = d3.behavior.drag()
+      .origin(function(d) { return d; })
+      .on("dragstart", dragStarted)
+      .on("drag", dragged)
+      .on("dragend", dragEnded);
+
+    container.selectAll(".node").remove();
+
     var node = container.selectAll(".node")
         .data(graph.nodes())
       .enter().append("g")
@@ -104,17 +113,70 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
         .call(drag);
 
     node.append("circle")
-      .attr("r", function(d) { return grid.getFactor(); });
+      .attr("r", function(d) { return grid.getFactor() - 5; });
     node.append("text")
-      .attr("dy", function(d) { return grid.getFactor() + 14; })
+      .attr("dy", function(d) { return grid.getFactor() + 10; })
       .attr("text-anchor", "middle")
       .text(function(d){
         return d.label;
       });
+  };
 
+  var renderLinks = function() {
+    container.selectAll(".link").remove();
+    linkElements = container.selectAll(".link")
+        .data(graph.links())
+      .enter().append("g")
+        .attr("class", "link");
+    
+    linkElements.append("line")
+      .attr("marker-end", "url(#arrow)");
+
+    alignLinks();
+  };
+
+  var alignLinks = function() {
+    linkElements.each(function(d) {
+      console.log(d);
+      var x1 = d.source.x,
+          y1 = d.source.y,
+          x2 = d.target.x,
+          y2 = d.target.y,
+          angle = Math.atan2(y2 - y1, x2 - x1);
+      d.targetX = x2 - Math.cos(angle) * (grid.getFactor() + 5);
+      d.targetY = y2 - Math.sin(angle) * (grid.getFactor() + 5);
+    });
+    
+    linkElements.selectAll("line")
+      .attr("x1", function(d){
+        return d.source.x;
+      }).attr("y1", function(d){
+        return d.source.y;
+      }).attr("x2", function(d){
+        return d.targetX;
+      }).attr("y2", function(d){
+        return d.targetY;
+      });
+    //.attr("marker-end", "url(#arrow)");
+    //node.attr("transform", function(d){
+    //  return "translate(" + d.x + "," + d.y + ")";
+    //});
   };
 
   var init = function() {
+    svg.append("svg:defs")
+      .append("svg:marker")
+      .attr("id", "arrow")
+      .attr("viewBox", "0 0 10 10")
+      .attr("refX", 3).attr("refY", 5)
+      .attr("markerUnits", "strokeWidth")
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 4)
+      .attr("orient", "auto")
+      .style('fill', '#ddd')
+      .append("svg:path")
+      .attr("d", "M 0 0 L 10 5 L 0 10 z");
+
     loadFixtures();
     $(window).resize(debounce(updateSize, 400));
     updateSize();
@@ -195,6 +257,16 @@ corpcanvas.factory('graph', ['$rootScope', function($rootScope) {
         nodeList.push(v);
       });
       return nodeList;
+    },
+    links: function() {
+      var linkList = [];
+      angular.forEach(links, function(orig) {
+        var link = angular.copy(orig);
+        link.source = nodes[orig.parent];
+        link.target = nodes[orig.child];
+        linkList.push(link);
+      });
+      return linkList;
     },
     dump: function() {
       console.log("Graph", nodes, links);

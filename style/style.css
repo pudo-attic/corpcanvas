@@ -14,6 +14,10 @@ circle {
     stroke-width: 2px;
 }
 
+circle:hover {
+    fill: red;
+}
+
 circle.dragging {
     stroke: #ddd;
 }
@@ -26,6 +30,12 @@ circle.dragging {
 }
 
 text {
-    fill: #000;
+    fill: #666;
     font-weight: bold;
+}
+
+.link line {
+    stroke: #ddd;
+    stroke-width: 3px;
+    cursor: pointer;
 }
