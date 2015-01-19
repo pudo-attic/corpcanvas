@@ -32,8 +32,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
   var dragged = function(d) {
     d3.select(this)
       .attr("transform", function(d){
-          d.x = Math.min(grid.maxX(), Math.max(grid.minX(), d.x + d3.event.dx));
-          d.y = Math.min(grid.maxY(), Math.max(grid.minY(), d.y + d3.event.dy));
+          grid.bounded(d, d3.event.dx, d3.event.dy);
           return "translate(" + d.x + "," + d.y + ")";
       });
     alignLinks();
@@ -42,20 +41,17 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
   var dragEnded = function(d) {
     d3.select(this)
       .classed("dragging", false);
-    var pos = grid.snap(d.id, d.x, d.y);
-    d.left = pos[0];
-    d.top = pos[1];
+    grid.snap(d);
     d3.select(this)
       .attr("transform", function(d){
-          d.x = grid.translateTop(d.top);
-          d.y = grid.translateLeft(d.left);
+          grid.position(d);
           return "translate(" + d.x + "," + d.y + ")";
       });
     alignLinks();
   }
 
   var loadFixtures = function() {
-    angular.forEach(FIXTURES.nodes, function(n) {
+    angular.forEach(FIXTURES.nodes, function(n, i) {
       graph.addNode(n);
     });
     angular.forEach(FIXTURES.links, function(l) {
@@ -70,7 +66,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
     container.append("g")
         .attr("class", "x axis")
       .selectAll("line")
-        .data(d3.range(0, width, grid.getPadding()))
+        .data(d3.range(grid.getPadding() * 3, width, grid.getPadding() * 5))
       .enter().append("line")
         .attr("x1", function(d) { return d; })
         .attr("y1", 0)
@@ -80,13 +76,16 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
     container.append("g")
         .attr("class", "y axis")
       .selectAll("line")
-        .data(d3.range(0, height, grid.getPadding()))
+        .data(d3.range(grid.getPadding() * 3, height, grid.getPadding() * 5))
       .enter().append("line")
         .attr("x1", 0)
         .attr("y1", function(d) { return d; })
         .attr("x2", width)
         .attr("y2", function(d) { return d; });
 
+    angular.forEach(graph.nodes(), function(n) {
+      grid.position(n);
+    });
 
     renderLinks();
     renderNodes();
@@ -106,8 +105,6 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       .enter().append("g")
         .attr("class", "node")
         .attr("transform", function(d){
-          d.x = grid.translateTop(d.top);
-          d.y = grid.translateLeft(d.left);
           return "translate(" + d.x + "," + d.y + ")";
         })
         .call(drag);
@@ -117,9 +114,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
     node.append("text")
       .attr("dy", function(d) { return grid.getFactor() + 10; })
       .attr("text-anchor", "middle")
-      .text(function(d){
-        return d.label;
-      });
+      .text(function(d){ return d.label; });
   };
 
   var renderLinks = function() {
@@ -137,7 +132,6 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
 
   var alignLinks = function() {
     linkElements.each(function(d) {
-      console.log(d);
       var x1 = d.source.x,
           y1 = d.source.y,
           x2 = d.target.x,
@@ -157,10 +151,6 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       }).attr("y2", function(d){
         return d.targetY;
       });
-    //.attr("marker-end", "url(#arrow)");
-    //node.attr("transform", function(d){
-    //  return "translate(" + d.x + "," + d.y + ")";
-    //});
   };
 
   var init = function() {
@@ -173,7 +163,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       .attr("markerWidth", 5)
       .attr("markerHeight", 4)
       .attr("orient", "auto")
-      .style('fill', '#ddd')
+      .style('fill', '#ccc')
       .append("svg:path")
       .attr("d", "M 0 0 L 10 5 L 0 10 z");
 
@@ -189,15 +179,37 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
 corpcanvas.factory('grid', ['graph', function(graph) {
   var windowWidth = 0,
       windowHeight = 0,
-      //numHorizontal = 0,
-      //numVertical = 0,
+      outerBorder = 0,
+      nodeWidth = 0,
+      numHorizontal = 0,
+      numVertical = 0,
       factor = 10,
       padding = 0;
 
-  var place = function(id, left, top) {
-    //console.log("PLACE", id, left, top);
-    //grid.push([id, left, top]);
-    return [left, top];
+  var isFree = function(id, left, top) {
+    var free = true;
+    if (angular.isUndefined(top) || top === null ||
+        angular.isUndefined(left) || left === null) {
+      return false;
+    }
+    if (left < 0 || top < 0 || left >= (numVertical - 1)
+        || top >= (numHorizontal - 1)) {
+      return false;
+    }
+    angular.forEach(graph.nodes(), function(n) {
+      if (n.left == left && n.top == top && n.id != id) {
+        free = false;
+      }
+    });
+    return free;
+  }
+
+  var place = function(n) {
+    if (!isFree(n.id, n.left, n.top)) {
+      n.top = Math.floor(Math.random() * numVertical);
+      n.left = Math.floor(Math.random() * numHorizontal);
+      return place(n);
+    }
   }
 
   return {
@@ -206,32 +218,28 @@ corpcanvas.factory('grid', ['graph', function(graph) {
       windowHeight = height;
       factor = Math.min(1000, Math.max(20, width / 50));
       padding = factor * 0.5;
+      outerBorder = factor + padding;
+      nodeWidth = ((factor * 2) + padding)
+      numVertical = (windowHeight - (outerBorder * 2)) / nodeWidth;
+      numHorizontal = (windowWidth - (outerBorder * 2)) / nodeWidth;
     },
     place: place,
-    snap: function(id, x, y) {
-      var left = Math.round((y - (factor + padding)) / ((factor * 2) + padding));
-      var top = Math.round((x - (factor + padding)) / ((factor * 2) + padding));
-      return place(id, left, top);
+    snap: function(n) {
+      n.left = Math.round((n.y - outerBorder) / nodeWidth);
+      n.top = Math.round((n.x - outerBorder) / nodeWidth);
+      place(n);
     },
     getFactor: function() { return factor; },
     getPadding: function() { return padding; },
-    minX: function() {
-      return factor + padding;
+    bounded: function(d, dx, dy) {
+      d.x = Math.min(windowWidth - outerBorder, Math.max(outerBorder, d.x + dx));
+      d.y = Math.min(windowHeight - outerBorder, Math.max(outerBorder, d.y + dy));
     },
-    minY: function() {
-      return factor + padding;
-    },
-    maxX: function() {
-      return windowWidth - (factor + padding);
-    },
-    maxY: function() {
-      return windowHeight - (factor + padding);
-    },
-    translateTop: function(top) {
-      return factor + padding + (((factor * 2) + padding) * top);
-    },
-    translateLeft: function(left) {
-      return factor + padding + (((factor * 2) + padding) * left);
+    position: function(n) {
+      place(n)
+      n.x = outerBorder + (nodeWidth * n.top);
+      n.y = outerBorder + (nodeWidth * n.left);
+      return n;
     }
   };
 }]);
@@ -244,8 +252,6 @@ corpcanvas.factory('graph', ['$rootScope', function($rootScope) {
 
   return {
     addNode: function(data) {
-      data.top = 0;
-      data.left = 0;
       nodes[data.id] = data;
     },
     addLink: function(data) {
