@@ -2,3 +2,14 @@
 body {
     background-color: pink;
 }
+
+svg {
+
+}
+
+circle {
+    fill: #fff;
+    stroke: #000;
+    cursor: pointer;
+    stroke-width: 2px;
+}
