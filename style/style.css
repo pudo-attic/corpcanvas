@@ -13,3 +13,7 @@ circle {
     cursor: pointer;
     stroke-width: 2px;
 }
+
+circle.dragging {
+    stroke: #ddd;
+}
