@@ -1,0 +1,18 @@
+{
+  "name": "corpcanvas",
+  "version": "0.1",
+  "homepage": "https://granoproject.org",
+  "authors": [],
+  "description": "",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
+  "dependencies": {
+    "angular": "~1.3.9",
+    "angular-local-storage": "~0.1.5"
+  }
+}
