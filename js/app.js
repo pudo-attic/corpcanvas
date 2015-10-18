@@ -1,22 +1,13 @@
-
 var corpcanvas = angular.module('corpcanvas', ['debounce']);
-
-var FIXTURES = {
-  'nodes': [
-    {'id': 1, 'label': 'Chris Taggart', 'type': 'person'},
-    {'id': 2, 'label': 'Chrinon Ltd.', 'type': 'company'}],
-  'links': [{'parent': 1, 'child': 2}]
-}
 
 var ICONS = {
   'person': '\uf183',
   'company': '\uf0f2'
 }
 
-
 corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'graph', 'grid', 'debounce',
   function($scope, $location, $http, $window, graph, grid, debounce) {
-  
+
   var svg = d3.select("#page").append("svg"),
       container = svg.append("g"),
       linkElements = null,
@@ -56,15 +47,6 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       });
     alignLinks();
   }
-
-  var loadFixtures = function() {
-    angular.forEach(FIXTURES.nodes, function(n, i) {
-      graph.addNode(n);
-    });
-    angular.forEach(FIXTURES.links, function(l) {
-      graph.addLink(l);
-    });
-  };
 
   var redraw = function(width, height) {
     graph.dump();
@@ -120,6 +102,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       .attr("r", function(d) { return grid.getFactor() - 5; });
     node.append("text")
       .attr("dy", function(d) { return grid.getFactor() + 10; })
+      .attr("class", "title")
       .attr("text-anchor", "middle")
       .text(function(d){ return d.label; });
 
@@ -137,7 +120,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
         .data(graph.links())
       .enter().append("g")
         .attr("class", "link");
-    
+
     linkElements.append("line")
       .attr("marker-end", "url(#arrow)");
 
@@ -154,7 +137,7 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       d.targetX = x2 - Math.cos(angle) * (grid.getFactor() + 5);
       d.targetY = y2 - Math.sin(angle) * (grid.getFactor() + 5);
     });
-    
+
     linkElements.selectAll("line")
       .attr("x1", function(d){
         return d.source.x;
@@ -181,7 +164,6 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
       .append("svg:path")
       .attr("d", "M 0 0 L 10 5 L 0 10 z");
 
-    loadFixtures();
     $(window).resize(debounce(updateSize, 400));
     updateSize();
   };
@@ -287,42 +269,6 @@ corpcanvas.factory('grid', ['graph', function(graph) {
       n.x = outerBorder + (nodeWidth * n.top);
       n.y = outerBorder + (nodeWidth * n.left);
       return n;
-    }
-  };
-}]);
-
-
-
-corpcanvas.factory('graph', ['$rootScope', function($rootScope) {
-  var nodes = {},
-      links = [];
-
-  return {
-    addNode: function(data) {
-      nodes[data.id] = data;
-    },
-    addLink: function(data) {
-      links.push(data);
-    },
-    nodes: function() {
-      var nodeList = [];
-      angular.forEach(nodes, function(v) {
-        nodeList.push(v);
-      });
-      return nodeList;
-    },
-    links: function() {
-      var linkList = [];
-      angular.forEach(links, function(orig) {
-        var link = angular.copy(orig);
-        link.source = nodes[orig.parent];
-        link.target = nodes[orig.child];
-        linkList.push(link);
-      });
-      return linkList;
-    },
-    dump: function() {
-      console.log("Graph", nodes, links);
     }
   };
 }]);

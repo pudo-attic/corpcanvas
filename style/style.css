@@ -35,6 +35,10 @@ circle.dragging {
     cursor: pointer;
 }
 
+.node text.title {
+    font-family: sans-serif;
+}
+
 .link line {
     stroke: #ccc;
     stroke-width: 3px;
