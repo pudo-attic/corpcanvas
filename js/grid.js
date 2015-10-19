@@ -3,7 +3,7 @@ corpcanvas.factory('grid', ['graph', function(graph) {
   var windowWidth = 0,
       windowHeight = 0,
       outerBorder = 0,
-      nodeWidth = 0,
+      entityWidth = 0,
       numHorizontal = 0,
       numVertical = 0,
       factor = 10,
@@ -15,7 +15,7 @@ corpcanvas.factory('grid', ['graph', function(graph) {
         || top >= (numHorizontal)) {
       return false;
     }
-    angular.forEach(graph.nodes(), function(n) {
+    angular.forEach(graph.entities(), function(n) {
       if (n.left == left && n.top == top && n.id != id) {
         free = false;
       }
@@ -75,14 +75,14 @@ corpcanvas.factory('grid', ['graph', function(graph) {
       factor = Math.min(1000, Math.max(20, width / 100));
       padding = factor * 0.5;
       outerBorder = factor + padding;
-      nodeWidth = ((factor * 2) + padding)
-      numVertical = (windowHeight - (outerBorder * 2)) / nodeWidth;
-      numHorizontal = (windowWidth - (outerBorder * 2)) / nodeWidth;
+      entityWidth = ((factor * 2) + padding)
+      numVertical = (windowHeight - (outerBorder * 2)) / entityWidth;
+      numHorizontal = (windowWidth - (outerBorder * 2)) / entityWidth;
     },
     place: place,
     snap: function(n) {
-      n.left = Math.round((n.y - outerBorder) / nodeWidth);
-      n.top = Math.round((n.x - outerBorder) / nodeWidth);
+      n.left = Math.round((n.y - outerBorder) / entityWidth);
+      n.top = Math.round((n.x - outerBorder) / entityWidth);
       place(n);
     },
     getFactor: function() { return factor; },
@@ -93,8 +93,8 @@ corpcanvas.factory('grid', ['graph', function(graph) {
     },
     position: function(n) {
       place(n)
-      n.x = outerBorder + (nodeWidth * n.top);
-      n.y = outerBorder + (nodeWidth * n.left);
+      n.x = outerBorder + (entityWidth * n.top);
+      n.y = outerBorder + (entityWidth * n.left);
       return n;
     }
   };

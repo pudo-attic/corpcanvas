@@ -29,13 +29,13 @@ circle.dragging {
     vector-effect: non-scaling-stroke;
 }
 
-.node text {
+.entity text {
     fill: #666;
     font-weight: bold;
     cursor: pointer;
 }
 
-.node text.title {
+.entity text.title {
     font-family: sans-serif;
 }
 

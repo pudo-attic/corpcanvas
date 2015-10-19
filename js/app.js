@@ -72,41 +72,41 @@ corpcanvas.controller('AppCtrl', ['$scope', '$location', '$http', '$window', 'gr
         .attr("x2", width)
         .attr("y2", function(d) { return d; });
 
-    angular.forEach(graph.nodes(), function(n) {
-      grid.position(n);
+    angular.forEach(graph.entities(), function(e) {
+      grid.position(e);
     });
 
     renderLinks();
-    renderNodes();
+    renderEntities();
   };
 
-  var renderNodes = function() {
+  var renderEntities = function() {
     var drag = d3.behavior.drag()
       .origin(function(d) { return d; })
       .on("dragstart", dragStarted)
       .on("drag", dragged)
       .on("dragend", dragEnded);
 
-    container.selectAll(".node").remove();
+    container.selectAll(".entity").remove();
 
-    var node = container.selectAll(".node")
-        .data(graph.nodes())
+    var entity = container.selectAll(".entity")
+        .data(graph.entities())
       .enter().append("g")
-        .attr("class", "node")
+        .attr("class", "entity")
         .attr("transform", function(d){
           return "translate(" + d.x + "," + d.y + ")";
         })
         .call(drag);
 
-    node.append("circle")
+    entity.append("circle")
       .attr("r", function(d) { return grid.getFactor() - 5; });
-    node.append("text")
+    entity.append("text")
       .attr("dy", function(d) { return grid.getFactor() + 10; })
       .attr("class", "title")
       .attr("text-anchor", "middle")
       .text(function(d){ return d.label; });
 
-    node.append('text')
+    entity.append('text')
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
       .attr('font-family', 'FontAwesome')
