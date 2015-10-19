@@ -10,8 +10,30 @@ corpcanvas.factory('graph', [function() {
   var entities = [],
       links = [];
 
+  function Entity(id, label, data) {
+    var self = this;
+    self.id = id;
+    self.label = label;
+    self.data = data;
+
+    self.gridX = 0;
+    self.gridY = 0;
+    self.gridWidth = 4;
+    self.gridHeight = 2
+
+    // self.topLeft = function() {
+    //   return [];
+    // };
+    //
+    // self.contains = function(x, y) {
+    //
+    // };
+
+  }
+
   var addEntity = function(data) {
-    entities.push(data);
+    var entity = new Entity(data.id, data.label, data);
+    entities.push(entity);
   }
 
   var addLink = function(data) {
