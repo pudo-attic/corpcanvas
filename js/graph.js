@@ -6,7 +6,7 @@ var FIXTURES = {
 }
 
 
-corpcanvas.factory('graph', [function() {
+corpcanvas.factory('graph', ['grid', function(grid) {
   var entities = [],
       links = [];
 
@@ -18,16 +18,24 @@ corpcanvas.factory('graph', [function() {
 
     self.gridX = 0;
     self.gridY = 0;
-    self.gridWidth = 4;
-    self.gridHeight = 2
+    self.gridWidth = 6;
+    self.gridHeight = 3
 
-    // self.topLeft = function() {
-    //   return [];
-    // };
-    //
-    // self.contains = function(x, y) {
-    //
-    // };
+    self.getX = function() {
+      return grid.translateX(self.gridX);
+    };
+
+    self.getY = function() {
+      return grid.translateY(self.gridY);
+    };
+
+    self.getWidth = function() {
+      return grid.getUnit() * self.gridWidth;
+    };
+
+    self.getHeight = function() {
+      return grid.getUnit() * self.gridHeight;
+    };
 
   }
 

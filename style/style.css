@@ -1,24 +1,29 @@
 
 body {
+    background-color: black;
+}
+
+#corpcanvas {
     background-color: #f0f0f0;
+    margin: 20px;
 }
 
 svg {
 
 }
 
-circle {
+rect {
     fill: #fff;
     stroke: #ddd;
     cursor: pointer;
     stroke-width: 2px;
 }
 
-.node:hover circle {
+.node:hover rect {
     fill: #ddd;
 }
 
-circle.dragging {
+rect.dragging {
     stroke: #fff;
 }
 
